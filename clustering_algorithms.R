@@ -249,7 +249,8 @@ df_plot <- function(df) {
       xlab("") +
       ylab("") +
       ylim(global_y_range) +
-      theme_minimal()
+      theme_minimal() +
+      theme(axis.text.x = element_blank())
     
     print(p)
   }
@@ -271,7 +272,7 @@ cluster_assignment_plot <- function(df, cut_clusters){
   abline(h = seq(floor(min(cut_clusters)), ceiling(max(cut_clusters)), by = 1), col = "lightgray", lty = "longdash")
   # Add points
   colors <- hcl.colors(length(cut_clusters), palette = "SunsetDark", alpha = 1, rev = T)
-  points(cut_clusters, cex = 1, col = colors, pch = 19) # col = colors, pch = 19,
+  points(cut_clusters, cex = 1) # col = colors, pch = 19,
   axis(1, at = 1:length(cut_clusters), labels = rownames(df), las = 2)
   axis(2, at = seq(floor(min(cut_clusters)), ceiling(max(cut_clusters)), by = 1))
   

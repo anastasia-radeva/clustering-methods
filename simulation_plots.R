@@ -27,6 +27,13 @@
 # *the simulations do not strive to represent realistic processes
 
 # 2 Dependencies ---------------------------------------------------------------
+load_package <- function(pack){
+  if (!is.element(pack, installed.packages()[,1])){
+    install.packages(pack, dependencies = TRUE)
+  }
+  library(pack, character.only = TRUE)
+}
+
 load_package("ggplot2")
 load_package("e1071")
 
@@ -50,15 +57,15 @@ plot(skewed_series_1, type = "l", main = "Skewness 1", xlab = "", ylab = "", yli
 # density plot
 plot(density(skewed_series_1), type = "l")
 # skewness value
-skewness(skewed_series_1) # around -1
-kurtosis(skewed_series_1) # around 3
+# skewness(skewed_series_1) # around -1
+# kurtosis(skewed_series_1) # around 3
 
 plot(skewed_series_2, type = "l", main = "Skewness 2", xlab = "", ylab = "", ylim = c(-10, 10))
 # density plot
 plot(density(skewed_series_2), type = "l")
 #skewness value
-skewness(skewed_series_2) # around -1
-kurtosis(skewed_series_2) # around 3
+# skewness(skewed_series_2) # around -1
+# kurtosis(skewed_series_2) # around 3
 
 # 3.4 Kurtosis -----------------------------------------------------------------
 
@@ -66,13 +73,13 @@ plot(leptokurtic_series_1, type = "l", main = "Kurtosis 1", xlab = "", ylab = ""
 # density plot
 plot(density(leptokurtic_series_1))
 # kurtosis value
-kurtosis(leptokurtic_series_1) # a lot higher than 3
+# kurtosis(leptokurtic_series_1) # a lot higher than 3
 
 plot(leptokurtic_series_2, type = "l", main = "Kurtosis 2", xlab = "", ylab = "", ylim = c(-10, 10))
 # density plot
 plot(density(leptokurtic_series_2))
 # kurtosis value
-kurtosis(leptokurtic_series_2) # a lot higher than 3
+# kurtosis(leptokurtic_series_2) # a lot higher than 3
 
 # 3.5 Trend --------------------------------------------------------------------
 

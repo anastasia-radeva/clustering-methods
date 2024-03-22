@@ -30,6 +30,13 @@
 # *the simulations do not strive to represent realistic processes
 
 # 2 Dependencies ---------------------------------------------------------------
+load_package <- function(pack){
+  if (!is.element(pack, installed.packages()[,1])){
+    install.packages(pack, dependencies = TRUE)
+  }
+  library(pack, character.only = TRUE)
+}
+
 load_package("sarima")
 load_package("astsa")
 load_package("arfima")
@@ -104,9 +111,9 @@ sd_series_2 <- arfima.sim(n = n, muHat = c_1)
 # from the fluctuations in the shape of the density. 
 # we use our existing mean and sd for comparability
 
-set.seed(1)
+set.seed(3)
 skewed_series_1 <- arfima.sim(n = n, rand.gen = rsnorm, muHat = c_1, xi = skew_asym)
-set.seed(2)
+set.seed(4)
 skewed_series_2 <- arfima.sim(n = n, rand.gen = rsnorm, muHat = c_1, xi = skew_asym)
 
 # 3.5 Kurtosis -----------------------------------------------------------------

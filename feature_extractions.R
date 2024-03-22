@@ -1,4 +1,5 @@
-# In the following, we extract features from the raw time series data.
+# In the following, functions to extract features from the raw time series data 
+# are defined.
 
 # ------------------------------------------------------------------------------
 # Function to adjust data for trend and seasonality
