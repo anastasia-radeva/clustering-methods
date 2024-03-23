@@ -57,15 +57,15 @@ plot(skewed_series_1, type = "l", main = "Skewness 1", xlab = "", ylab = "", yli
 # density plot
 plot(density(skewed_series_1), type = "l")
 # skewness value
-# skewness(skewed_series_1) # around -1
-# kurtosis(skewed_series_1) # around 3
+# moments::skewness(skewed_series_1) # around -1
+# moments::kurtosis(skewed_series_1) # around 3
 
 plot(skewed_series_2, type = "l", main = "Skewness 2", xlab = "", ylab = "", ylim = c(-10, 10))
 # density plot
 plot(density(skewed_series_2), type = "l")
 #skewness value
-# skewness(skewed_series_2) # around -1
-# kurtosis(skewed_series_2) # around 3
+# moments::skewness(skewed_series_2) # around -1
+# moments::kurtosis(skewed_series_2) # around 3
 
 # 3.4 Kurtosis -----------------------------------------------------------------
 
@@ -73,13 +73,13 @@ plot(leptokurtic_series_1, type = "l", main = "Kurtosis 1", xlab = "", ylab = ""
 # density plot
 plot(density(leptokurtic_series_1))
 # kurtosis value
-# kurtosis(leptokurtic_series_1) # a lot higher than 3
+# moments::kurtosis(leptokurtic_series_1) # a lot higher than 3
 
 plot(leptokurtic_series_2, type = "l", main = "Kurtosis 2", xlab = "", ylab = "", ylim = c(-10, 10))
 # density plot
 plot(density(leptokurtic_series_2))
 # kurtosis value
-# kurtosis(leptokurtic_series_2) # a lot higher than 3
+# moments::kurtosis(leptokurtic_series_2) # a lot higher than 3
 
 # 3.5 Trend --------------------------------------------------------------------
 

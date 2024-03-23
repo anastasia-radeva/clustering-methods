@@ -2,10 +2,9 @@
 # 1 READ ME
 # 2 Dependencies
 # 3 Clustering Algorithms
-#   3.1 Distance Matrices
-#   3.2 k-Means
-#   3.3 Hierarchical
-#   3.4 Model-based
+#   3.1 k-Means
+#   3.2 Hierarchical
+#   3.3 Model-based
 # 4 Visualizations
 #   4.1 
 #   4.2 
@@ -170,7 +169,7 @@ compute_dist_matrix <- function(df, dist_method) {
   # assign the new distance matrix to the global environment
   dist_matrix_name <- paste("dist", df_name, dist_method, sep = "_")
   # assign the distance matrix to the list in the global environment
-  # dist_matrix_list <- dist_matrix
+  dist_matrix_list <- dist_matrix
   assign(dist_matrix_name, dist_matrix, envir = .GlobalEnv)
   print(dist_matrix_name)
   return(dist_matrix)
@@ -342,45 +341,56 @@ clusters_plot <- function(cluster_object, df) {
 
 # 5 Evaluation Criteria --------------------------------------------------------
 
-internal_evaluation <- function(df, distance_method, clusters_object){
+internal_evaluation <- function(df, distance_method, clusters_object, toGlobEnv = T){
   load_package("fpc")
   
   dist <- compute_dist_matrix(df, distance_method)
   clust_stats <- cluster.stats(dist, clusters_object)
   
-  # add criteria to a list
-  int_eval_list <- list()
-  int_eval_list[["Calinski-Harabasz Index"]] <- clust_stats$ch
-  int_eval_list[["Dunn Index"]] <- clust_stats$dunn
-  int_eval_list[["Average Silhouette Width"]] <- clust_stats$avg.silwidth
+  int_eval_df <- data.frame(matrix(ncol = 3, nrow = 1))
+  colnames(int_eval_df) <- c("Calinski-Harabasz Index", "Dunn Index", "Average Silhouette Width")
   
-  clusters_object_name <- deparse(substitute(clusters_object))
-  list_name <- paste("int_eval", clusters_object_name, sep = "_")
-  assign(list_name, int_eval_list, envir = .GlobalEnv)
-  print(list_name)
-  return(int_eval_list)
+  int_eval_df["Calinski-Harabasz Index"] <- clust_stats$ch
+  int_eval_df["Dunn Index"] <- clust_stats$dunn
+  int_eval_df["Average Silhouette Width"] <- clust_stats$avg.silwidth
+  
+  if (toGlobEnv == T){
+    clusters_object_name <- deparse(substitute(clusters_object))
+    df_name <- paste("int_eval", clusters_object_name, sep = "_")
+    assign(df_name, int_eval_df, envir = .GlobalEnv)
+    print(df_name)
+  }
+  
+  return(int_eval_df)
   
 }
 # Example:
+# internal_evaluation(scaled_df_simulated_features, "euclidean", clusters_kshape_scaled_df_simulated_features_9@cluster)
 # internal_evaluation(scaled_df_simulated_features, "DTW", cut_11_clusters_hc_ward.D2_dist_scaled_df_simulated_features_DTW)
 # internal_evaluation(scaled_df_simulated_features, "euclidean", clusters_kmeans_scaled_df_simulated_features_11$cluster)
 # internal_evaluation(scaled_df_simulated_features, "euclidean", clusters_kmeans_scaled_df_simulated_features_11_plus)
 
-external_evaluation <- function(true_labels, clusters_object){
+external_evaluation <- function(true_labels, clusters_object, toGlobEnv = T){
   load_package("ClusterR")
   
-  ext_eval_list <- list()
-  ext_eval_list[["Adjusted Rand Index"]] <- external_validation(true_labels, clusters_object, method = "adjusted_rand_index")
-  ext_eval_list[["Jaccard Index"]] <- external_validation(true_labels, clusters_object, method = "jaccard_index")
-  ext_eval_list[["Purity"]] <- external_validation(true_labels, clusters_object, method = "purity")
-  ext_eval_list[["Normalized Mutual Information"]] <- external_validation(true_labels, clusters_object, method = "nmi")
+  ext_eval_df <- data.frame(matrix(ncol = 4, nrow = 1))
+  colnames(ext_eval_df) <- c("Adjusted Rand Index", "Jaccard Index", "Purity", "Normalized Mutual Information")
   
-  clusters_object_name <- deparse(substitute(clusters_object))
-  list_name <- paste("ext_eval", clusters_object_name, sep = "_")
-  assign(list_name, ext_eval_list, envir = .GlobalEnv)
-  print(list_name)
-  return(ext_eval_list)
+  ext_eval_df["Adjusted Rand Index"] <- external_validation(true_labels, clusters_object, method = "adjusted_rand_index")
+  ext_eval_df["Jaccard Index"] <- external_validation(true_labels, clusters_object, method = "jaccard_index")
+  ext_eval_df["Purity"] <- external_validation(true_labels, clusters_object, method = "purity")
+  ext_eval_df["Normalized Mutual Information"] <- external_validation(true_labels, clusters_object, method = "nmi")
+  
+  if (toGlobEnv == T){
+    clusters_object_name <- deparse(substitute(clusters_object))
+    df_name <- paste("ext_eval", clusters_object_name, sep = "_")
+    assign(df_name, ext_eval_df, envir = .GlobalEnv)
+    print(df_name)
+  }
+  
+  return(ext_eval_df)
   
 }
+
 # Example:
-# external_evaluation(simulated_data_labels_numeric, clusters_kmeans_scaled_df_simulated_features_11$cluster)
+# internal_evaluation(simulated_data_labels_numeric, clusters_kshape_scaled_df_simulated_features_9@cluster)
