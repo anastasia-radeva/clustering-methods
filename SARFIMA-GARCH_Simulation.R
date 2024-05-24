@@ -30,19 +30,12 @@
 # *the simulations do not strive to represent realistic processes
 
 # 2 Dependencies ---------------------------------------------------------------
-load_package <- function(pack){
-  if (!is.element(pack, installed.packages()[,1])){
-    install.packages(pack, dependencies = TRUE)
-  }
-  library(pack, character.only = TRUE)
-}
-
-load_package("sarima")
-load_package("astsa")
-load_package("arfima")
-load_package("rugarch")
-load_package("TSA")
-load_package("fGarch")
+library("sarima")
+library("astsa")
+library("arfima")
+library("rugarch")
+library("TSA")
+library("fGarch")
 
 # 3 SARFIMA --------------------------------------------------------------------
 
@@ -71,7 +64,7 @@ sar1_2 <- 0.95
 ar1_1 <- -0.8
 ar1_2 <- 0.9
 # Fractional Differencing Parameter
-d <- 0.3
+d <- -0.4
 # Threshold Autoregressive Coefficients
 tar1_1 <- 0.85
 tar1_2 <- 0.25
@@ -95,9 +88,9 @@ mean_series_2 <- arfima.sim(n = n, muHat = c_2, sd = 0)
 # similar standard deviation, but different means
 # ARFIMA(-), e ~ N(c_x, sd)
 set.seed(1)
-sd_series_1 <- arfima.sim(n = n, muHat = c_1)
+wn_1 <- arfima.sim(n = n, muHat = c_1)
 set.seed(2)
-sd_series_2 <- arfima.sim(n = n, muHat = c_1)
+wn_2 <- arfima.sim(n = n, muHat = c_1)
 
 # 3.4 Skewness -----------------------------------------------------------------
 # same skew parameter, but different means
@@ -112,9 +105,9 @@ sd_series_2 <- arfima.sim(n = n, muHat = c_1)
 # we use our existing mean and sd for comparability
 
 set.seed(3)
-skewed_series_1 <- arfima.sim(n = n, rand.gen = rsnorm, muHat = c_1, xi = skew_asym)
+skewed_wn_1 <- arfima.sim(n = n, rand.gen = rsnorm, muHat = c_1, xi = skew_asym)
 set.seed(4)
-skewed_series_2 <- arfima.sim(n = n, rand.gen = rsnorm, muHat = c_1, xi = skew_asym)
+skewed_wn_2 <- arfima.sim(n = n, rand.gen = rsnorm, muHat = c_1, xi = skew_asym)
 
 # 3.5 Kurtosis -----------------------------------------------------------------
 # same shape parameter, but different means
@@ -123,9 +116,9 @@ skewed_series_2 <- arfima.sim(n = n, rand.gen = rsnorm, muHat = c_1, xi = skew_a
 # shape parameter nu > 2, the higher nu, the lighter the tails, approaches normal distribution
 
 set.seed(3)
-leptokurtic_series_1 <- arfima.sim(n = n, rand.gen = rstd, muHat = c_1, nu = shape_lepto)
-set.seed(9)
-leptokurtic_series_2 <- arfima.sim(n = n, rand.gen = rstd, muHat = c_1, nu = shape_lepto)
+leptokurtic_wn_1 <- arfima.sim(n = n, rand.gen = rstd, muHat = c_1, nu = shape_lepto)
+set.seed(63)
+leptokurtic_wn_2 <- arfima.sim(n = n, rand.gen = rstd, muHat = c_1, nu = shape_lepto)
 
 # 3.6 Trend --------------------------------------------------------------------
 # same drift, but different intercept
@@ -133,9 +126,9 @@ leptokurtic_series_2 <- arfima.sim(n = n, rand.gen = rstd, muHat = c_1, nu = sha
 # mean parameter determines the trend, when d > 0
 
 set.seed(1)
-drift_series_1 <- arfima.sim(n = n, model = list(dint = 1), muHat = drift, sd = 0)
+trend_1 <- arfima.sim(n = n, model = list(dint = 1), muHat = drift, sd = 0)
 set.seed(2)
-drift_series_2 <- c_2 + arfima.sim(n = n, model = list(dint = 1), muHat = drift, sd = 0)
+trend_2 <- -c_2 + arfima.sim(n = n, model = list(dint = 1), muHat = drift, sd = 0)
 
 # 3.7 Seasonality --------------------------------------------------------------
 # same seasonal autocorregressive coefficient, but different periodicity
@@ -144,21 +137,21 @@ drift_series_2 <- c_2 + arfima.sim(n = n, model = list(dint = 1), muHat = drift,
 # the first 1/x*n components of the innovation play a role similar to the intercept, 
 # as arfima.sim does not have a parameter for this
 set.seed(1)
-seasonal_series_1 <- arfima.sim(model = list(seasonal = list(phi = sar1_1, period = n/4)), 
-                                n = n, innov = c(rep(c_2, 1/4*n), rep(0, (3/4)*n)) + rnorm(n))
+seasonal_ar_1 <- arfima.sim(model = list(seasonal = list(phi = sar1_1, period = n/4)), 
+                                n = n, innov = c(rep(c_2*10, 1/4*n), rep(0, (3/4)*n)) + rnorm(n))
 set.seed(2)
-seasonal_series_2 <- arfima.sim(model = list(seasonal = list(phi = sar1_1, period = n/5)), 
-                                n = n, innov = c(rep(c_2, 1/5*n), rep(0, 4/5*n)) + rnorm(n))
+seasonal_ar_2 <- arfima.sim(model = list(seasonal = list(phi = sar1_1, period = n/5)), 
+                                n = n, innov = c(rep(c_2*10, 1/5*n), rep(0, 4/5*n)) + rnorm(n))
 
 # 3.8 Periodicity --------------------------------------------------------------
 # same periodicity, but different seasonal autoregressive coefficients and shape
 # SARFIMA(sar_x)
 
 set.seed(1)
-periodic_series_1 <- arfima.sim(model = list(seasonal = list(phi = sar1_1, period = n/10)), 
+seasonal_ar_3 <- arfima.sim(model = list(seasonal = list(phi = sar1_1, period = n/10)), 
                                 n = n, innov = c(rep(c_2, 1/20*n), rep(0, 19/20*n)) + rnorm(n))
 set.seed(2)
-periodic_series_2 <- arfima.sim(model = list(seasonal = list(phi = sar1_2, period = n/10)), 
+seasonal_ar_4 <- arfima.sim(model = list(seasonal = list(phi = sar1_1, period = n/10)), 
                                 n = n, innov = c(rep(c_2, 1/20*n), rep(0, 19/20*n)) + rnorm(n))
 
 # 3.9 Autocorrelation ----------------------------------------------------------
@@ -167,10 +160,10 @@ periodic_series_2 <- arfima.sim(model = list(seasonal = list(phi = sar1_2, perio
 
 # autocorrelated_series_1 <- arfima.sim(model = list(phi = ar1_1), n = n, innov = c(c_2, rep(0, n-1)))
 # autocorrelated_series_2 <- arfima.sim(model = list(phi = ar1_1), n = n, innov = c(c_2*2, rep(0, n-1)))
-set.seed(1)
-autocorrelated_series_1 <- arfima.sim(model = list(phi = ar1_1), n = n, sigma2 = 1)
-set.seed(2)
-autocorrelated_series_2 <- arfima.sim(model = list(phi = ar1_1), n = n, sigma2 = 1)
+set.seed(10)
+ar_1 <- arfima.sim(model = list(phi = ar1_1), n = n, sigma2 = 1)
+set.seed(12)
+ar_2 <- arfima.sim(model = list(phi = ar1_1), n = n, sigma2 = 1)
 
 # 3.10 Long-range Dependence ---------------------------------------------------
 # same fractional differencing parameter 
@@ -187,19 +180,19 @@ autocorrelated_series_2 <- arfima.sim(model = list(phi = ar1_1), n = n, sigma2 =
 
 # long_range_series_1 <- arfima.sim(model = list(phi = ar1_1, dfrac = -d), n = n, innov = c(c_2, rep(0, n-1)))
 # long_range_series_2 <- arfima.sim(model = list(phi = ar1_1, dfrac = -d), n = n, innov = c(c_2*2, rep(0, n-1)))
-set.seed(1)
-long_range_series_1 <- arfima.sim(model = list(phi = ar1_1, dfrac = -d), n = n, sigma2 = 1)
-set.seed(2)
-long_range_series_2 <- arfima.sim(model = list(phi = ar1_1, dfrac = -d), n = n, sigma2 = 1)
+set.seed(3)
+fractional_diff_ar_1 <- arfima.sim(model = list(phi = ar1_1, dfrac = d), n = n, sigma2 = 1)
+set.seed(4)
+fractional_diff_ar_2 <- arfima.sim(model = list(phi = ar1_1, dfrac = d), n = n, sigma2 = 1)
 
 # 3.11 Non linearity in the Mean -----------------------------------------------
 # Threshold Regime Switching Autoregressive Process
 
 set.seed(1)
-nonlinear_mean_series_1 <- tar.sim(ntransient = 0, n = n, Phi1 = c(0, tar1_1), Phi2 = c(0, tar1_2), 
-                                  thd = r, p = 1, d = del, sigma1 = 1, sigma2 = 1)$y
+tar_1 <- tar.sim(ntransient = 0, n = n, Phi1 = c(0, tar1_1), Phi2 = c(0, tar1_2), 
+                                   thd = r, p = 1, d = del, sigma1 = 1, sigma2 = 1)$y
 set.seed(2)
-nonlinear_mean_series_2 <- tar.sim(ntransient = 0, n = n, Phi1 = c(0, tar1_1), Phi2 = c(0, tar1_2), 
+tar_2 <- tar.sim(ntransient = 0, n = n, Phi1 = c(0, tar1_1), Phi2 = c(0, tar1_2), 
                                    thd = r, p = 1, d = del, sigma1 = 1, sigma2 = 1)$y
 
 # 4 GARCH ----------------------------------------------------------------------
@@ -209,14 +202,13 @@ nonlinear_mean_series_2 <- tar.sim(ntransient = 0, n = n, Phi1 = c(0, tar1_1), P
 omega_1 <- 0.1
 omega_2 <- 0.15
 # ARCH parameters
-alpha1_1 <- 0.1
+alpha1_1 <- 0.3
 alpha1_2 <- 0.5
 # GARCH parameters
-beta1_1 <- 0.2 
+beta1_1 <- 0.4 
 beta1_2 <- 0.49 # sum of alpha1_2 and beta1_2 close to 1
 # asymmetry parameter for eGARCH 
 gamma_1 <- -0.6
-# fractional differencing parameter
 
 # 4.2 Nonlinearity in the volatility -------------------------------------------
 # same gamma and alpha
@@ -227,73 +219,71 @@ gamma_1 <- -0.6
 nonlinear_spec = ugarchspec(variance.model = list(model = "eGARCH", 
                                                   garchOrder = c(1, 1), 
                                                   variance.targeting = FALSE), 
-                            mean.model = list(armaOrder = c(0, 0),
-                                              include.mean = F), 
+                            mean.model = list(armaOrder = c(1, 0),
+                                              include.mean = T), 
                             distribution.model = "norm")
 
 # parameter assignment for first series
-setfixed(nonlinear_spec) <- list(omega = omega_1, alpha1 = alpha1_1, beta1 = beta1_1, gamma1 = gamma_1)
+setfixed(nonlinear_spec) <- list(mu = 1, ar1 = 0.7, omega = omega_1, alpha1 = alpha1_1, beta1 = beta1_1, gamma1 = gamma_1)
 set.seed(2)
 nonlinear_s4_1 = ugarchpath(nonlinear_spec, n.sim = n)
-nonlinear_vola_series_1 <- nonlinear_s4_1@path$seriesSim
+egarch_1 <- nonlinear_s4_1@path$seriesSim
 
 set.seed(3)
 nonlinear_s4_2 = ugarchpath(nonlinear_spec, n.sim = n)
-nonlinear_vola_series_2 <- nonlinear_s4_2@path$seriesSim
+egarch_2 <- nonlinear_s4_2@path$seriesSim
 
 # 4.3 Volatility Clustering ----------------------------------------------------
 # same volatility clustering coefficients (alpha1 and beta1)
 # but different constant terms omega
 # GARCH(alpha1_2, beta1_2), ARMA(-), e ~ N(0, 1)
 vola_clustering_spec = ugarchspec(variance.model = list(model = "sGARCH", 
-                                        garchOrder = c(1, 1), 
-                                        variance.targeting = FALSE), 
-                  mean.model = list(armaOrder = c(0, 0),
-                                    include.mean = F), 
-                  distribution.model = "norm")
+                                                        garchOrder = c(1, 1), 
+                                                        variance.targeting = FALSE), 
+                                  mean.model = list(armaOrder = c(1, 0),
+                                                    include.mean = T), 
+                                  distribution.model = "norm")
 # parameter assignment for first series
 # alpha1 + beta1 close to 1 to simulate vola clustering
-setfixed(vola_clustering_spec) <- list(omega = omega_1, alpha1 = alpha1_2, beta1 = beta1_2)
-set.seed(2)
+setfixed(vola_clustering_spec) <- list(mu = 1, ar1 = 0.7, omega = omega_1, alpha1 = alpha1_2, beta1 = beta1_2)
+set.seed(4)
 vola_clustering_s4_1 = ugarchpath(vola_clustering_spec, n.sim = n)
-vola_clustering_series_1 <- vola_clustering_s4_1@path$seriesSim
+garch_1 <- vola_clustering_s4_1@path$seriesSim
 
-set.seed(3)
+set.seed(5)
 vola_clustering_s4_2 = ugarchpath(vola_clustering_spec, n.sim = n)
-vola_clustering_series_2 <- vola_clustering_s4_2@path$seriesSim
+garch_2 <- vola_clustering_s4_2@path$seriesSim
 
 # Data Frame -------------------------------------------------------------------
 
-simulated_data <- data.frame(sd_series_1, sd_series_2, 
-                             skewed_series_1, skewed_series_2, 
-                             leptokurtic_series_1, leptokurtic_series_2, 
-                             drift_series_1, drift_series_2, 
-                             seasonal_series_1, seasonal_series_2, 
-                             periodic_series_1, periodic_series_2, 
-                             autocorrelated_series_1, autocorrelated_series_2, 
-                             long_range_series_1, long_range_series_2, 
-                             nonlinear_mean_series_1, nonlinear_mean_series_2, 
-                             nonlinear_vola_series_1, nonlinear_vola_series_2, 
-                             vola_clustering_series_1, vola_clustering_series_2)
+simulated_data <- data.frame(wn_1, wn_2, 
+                             skewed_wn_1, skewed_wn_2, 
+                             leptokurtic_wn_1, leptokurtic_wn_2, 
+                             trend_1, trend_2, 
+                             seasonal_ar_1, seasonal_ar_2, 
+                             seasonal_ar_3, seasonal_ar_4,
+                             ar_1, ar_2, 
+                             fractional_diff_ar_1, fractional_diff_ar_2, 
+                             tar_1, tar_2, 
+                             egarch_1, egarch_2, 
+                             garch_1, garch_2)
 
 
 
 df_simulated <- t(simulated_data)
 
-# create data labels for later
-simulated_data_labels <- c("sd", "sd", 
-                          "skewed", "skewed", 
-                          "leptokurtic", "leptokurtic", 
-                          "drift", "drift", 
-                          "seasonal", "seasonal", 
-                          "periodic", "periodic", 
-                          "autocorrelated", "autocorrelated", 
-                          "long_range", "long_range", 
-                          "nonlinear_mean", "nonlinear_mean", 
-                          "nonlinear_vola", "nonlinear_vola", 
-                          "vola_clustering", "vola_clustering")
+# create data labels for external evaluation
+simulated_data_labels <- c("wn", "wn", 
+                           "skewed wn", "skewed wn", 
+                           "leptokurtic wn", "leptokurtic wn", 
+                           "trend", "trend", 
+                           "seasonala ar", "seasonal ar", 
+                           "periodic ar", "period ar", 
+                           "ar", "ar", 
+                           "fractional diff ar", "fractinal diff ar", 
+                           "tar", "tar", 
+                           "egarch", "egarch", 
+                           "garch", "garch")
 simulated_data_labels_factor <- as.factor(simulated_data_labels)
-
 # Convert factor to numeric
 simulated_data_labels_numeric <- as.numeric(simulated_data_labels_factor)
-

@@ -1,31 +1,23 @@
-# Outline
-# 1 READ ME
-# 2 Dependencies
-# 3 Clustering Algorithms
-#   3.1 k-Means
-#   3.2 Hierarchical
-#   3.3 Model-based
-# 4 Visualizations
-#   4.1 
-#   4.2 
-#   4.3 
-# 5 Evaluation Criteria
-#   5.1 External Evaluation Criteria
-#   5.2 Internal Evaluation Criteria 
-
 # 1 READ ME --------------------------------------------------------------------
 # The following are functions 
-# - which perform clustering and save the result in the Global(soon to be virtual?) Environment
+# - which perform clustering and save the result in the Global Environment
 # - which visualize the clusters
 # - which evaluate the clustering performance using internal/external methods
 
 # 2 Dependencies ---------------------------------------------------------------
-load_package <- function(pack){
-  if (!is.element(pack, installed.packages()[,1])){
-    install.packages(pack, dependencies = TRUE)
-  }
-  library(pack, character.only = TRUE)
-}
+library("purrr")
+library("dplyr")
+library("ggplot2")
+library("stats")
+library("dtwclust")
+library("proxy")
+library("fclust")
+library("RColorBrewer")
+library("graphics")
+library("ggplot2")
+library("gridExtra")
+library("fpc")
+library("ClusterR")
 
 # 3 Clustering Algorithms ------------------------------------------------------
 
@@ -35,22 +27,25 @@ load_package <- function(pack){
 
 elbow <- function(df, max_num_clusters){
   
-  load_package("purrr")
-  load_package("dplyr")
-  load_package("ggplot2")
-  
+  df_name <- deparse(substitute(df))
   wss <- map_dbl(1:max_num_clusters, ~{kmeans(df, ., nstart=50,iter.max = 15 )$tot.withinss})
+  rate_of_decrease <- c(0, diff(wss))
+  
   n_clust <- 1:max_num_clusters
   elbow_df <- as.data.frame(cbind("n_clust" = n_clust, "wss" = wss))
-  
   plot <- ggplot(elbow_df) +
     geom_line(aes(y = wss, x = n_clust), colour = "#82518c") +
     scale_x_continuous(breaks = min(elbow_df$n_clust):max(elbow_df$n_clust)) +
-    theme_minimal()
+    labs(x = "Number of Clusters", y = "Within Sum of Squares", title = paste("Elbow Method on", df_name, sep = " ")) +
+    theme_minimal() + 
+    theme(plot.title.position = "plot",
+          plot.title = element_text(hjust = 0.5))
+  # ggplot2::coord_fixed()
   
   df_name <- deparse(substitute(df))
   plot_name <- paste("elbow", df_name, sep = "_")
   assign(plot_name, plot, envir = .GlobalEnv)
+  print(plot_name)
   
   return(plot)
 }
@@ -81,24 +76,60 @@ plus_plus <- function(df, k, seed=8) {
 # Example:
 # test_initialization <- plus_plus(scaled_df_simulated_features, 11)
 
-# k-means clustering algorithm with boolean "initialization" whether to use k-means ++ initialization method
-kmeans_cluster <- function(df, num_clusters, initialization = F, nstart = 50){
-  load_package("stats")
+# SIMFP Initialization
+simfp_init <- function(df, k, seed = 8) {
+  set.seed(seed)
+  centers <- numeric(k)
+  centers[1] <- sample(nrow(df), 1)  # First center chosen randomly
+  for (i in 2:k) {
+    dists <- dist(df[centers[1:(i-1)], ], df)  # Compute distances from existing centers
+    centers[i] <- which.max(apply(dists, 2, min))  # Choose the point that is farthest from any center
+  }
+  return(df[centers, ])
+}
+# Example:
+# simfp_init(scaled_df_simulated_features, 11)
+
+# GREP Initialization
+grep_init <- function(df, k, seed = 8) {
+  set.seed(seed)
+  centers <- numeric(k)
+  # First center is closest to centroid
+  centroid <- colMeans(df)
+  centers[1] <- which.min(colSums((t(df) - centroid)^2))
+  for (i in 2:k) {
+    remaining_indices <- setdiff(1:nrow(df), centers)  # Indices of the remaining rows
+    remaining_df <- df[remaining_indices, ]  # Exclude already chosen centers
+    dists <- dist(df[centers[1:(i-1)], ], remaining_df)  # Compute distances from existing centers
+    min_dists <- apply(dists, 2, min)  # Minimum distance from each point to any center
+    centers[i] <- remaining_indices[which.max(apply(remaining_df, 1, function(x) sum((x - df)^2)) / min_dists)]  # Choose the point that is most representative
+  }
+  return(df[centers, ])
+}
+
+# Example:
+# grep_init(scaled_df_simulated_features, 11)
+
+# k-means clustering algorithm with parameter "initialization" whether to use an initialization method and which
+kmeans_cluster <- function(df, num_clusters, initialization = NULL, nstart = 50){
   
   df_name <- deparse(substitute(df))
   
-  if (initialization == T) {
-    centroids <- plus_plus(df, num_clusters)
-    clusters <- kmeans(df, centers = centroids, nstart = nstart)
+  if (!is.null(initialization)) {
+    init_function <- get(initialization, envir = .GlobalEnv)
+    centroids <- init_function(df, num_clusters)
+    set.seed(7)
+    clusters <- kmeans(df, centers = centroids, iter.max = 2000)
     
-    clusters_name <- paste("clusters_kmeans", df_name, num_clusters, "plus",sep = "_")
+    clusters_name <- paste("clusters_kmeans", df_name, num_clusters, initialization, sep = "_")
   }
   else {
-    clusters <- kmeans(df, centers = num_clusters, iter.max = 15, nstart = nstart)
+    clusters <- kmeans(df, centers = num_clusters, iter.max = 2000, nstart = nstart)
     clusters_name <- paste("clusters_kmeans", df_name, num_clusters, sep = "_")
   }
   print(clusters_name)
-  assign(clusters_name, clusters, envir = .GlobalEnv)
+  # assign(clusters_name, clusters, envir = .GlobalEnv)
+  return(clusters)
 }
 # Example:
 # kmeans_cluster(scaled_df_simulated_features, 11, initialization = T) # clusters_kmeans_scaled_df_simulated_features_11_plus
@@ -109,7 +140,6 @@ kmeans_cluster <- function(df, num_clusters, initialization = F, nstart = 50){
 ### k-Shape --------------------------------------------------------------------
 # tsclust function does not have an initialization parameter
 kshape_cluster <- function(df, num_clusters, seed = 77){
-  load_package("dtwclust")
   
   clusters <- tsclust(df, "partitional", k = num_clusters, distance = "sbd", centroid = "shape", seed = seed)
   
@@ -123,11 +153,10 @@ kshape_cluster <- function(df, num_clusters, seed = 77){
 # cluster_assignment_plot(scaled_df_simulated_features, clusters_kshape_scaled_df_simulated_features_11@cluster)
 
 ## fuzzy c-means ---------------------------------------------------------------
-fuzzy_cluster <- function(df, num_clusters, dist){
-  load_package("dtwclust")
+fuzzy_cluster_old <- function(df, num_clusters, dist){
   
   clusters <- tsclust(
-    series = scaled_df_simulated_features,
+    series = df,
     type = "fuzzy",
     k = 11,
     preproc = NULL,
@@ -142,6 +171,17 @@ fuzzy_cluster <- function(df, num_clusters, dist){
   print(clusters_name)
   assign(clusters_name, clusters, envir = .GlobalEnv)
 }
+
+fuzzy_cluster <- function(df, k, type = "standard", dist = F){
+  
+  clusters <- Fclust(df, k, type = type, noise = T, stand = F, distance = dist)
+  
+  df_name <- deparse(substitute(df))
+  clusters_name <- paste("clusters_fuzzy", type, df_name, k, sep = "_")
+  print(clusters_name)
+  assign(clusters_name, clusters, envir = .GlobalEnv)
+}
+
 # Example:
 # fuzzy_cluster(scaled_df_simulated_features, 11, "dtw_basic")
 # cluster_assignment_plot(scaled_df_simulated_features, clusters_fuzzy_scaled_df_simulated_features_11@cluster)
@@ -159,10 +199,14 @@ fuzzy_cluster <- function(df, num_clusters, dist){
 # "mcquitty" (= WPGMA), "median" (= WPGMC) or "centroid" (= UPGMC).
 
 # Function which computes distance matrix and stores it in the list
-compute_dist_matrix <- function(df, dist_method) {
-  load_package("stats")
-
-  dist_matrix <- dist(df, method=dist_method)
+compute_dist_matrix <- function(df_1, df_2 = NULL, dist_method) {
+  
+  if (!is.null(df_2)){
+    dist_matrix <- dist(df_1, df_2, method=dist_method, pairwise = F)
+  }
+  else {
+    dist_matrix <- dist(df_1, method=dist_method) 
+  }
   
   # get the name of the input data frame
   df_name <- deparse(substitute(df))
@@ -184,23 +228,22 @@ compute_dist_matrix <- function(df, dist_method) {
 # + agglomeration method for hierarchical clustering 
 # + distance method + name of data frame
 hierarch_cluster <- function(dist_matrix = NULL, 
-                            compute = F, df = NULL, dist_method = NULL, 
+                             compute = F, df_1 = NULL, df_2 = NULL, dist_method = NULL, 
                              agglomeration_method) {
-  load_package("stats")
   
   # get the name of the input data frame
-  df_name <- deparse(substitute(df))
+  df_name <- deparse(substitute(df_1))
   
   # compute distance matrix, if not given as input
   if (compute == T) {
-    dist <- compute_dist_matrix(df, dist_method = dist_method)
+    dist <- compute_dist_matrix(df_1, df_2, dist_method = dist_method)
     dist_name <- paste("dist", df_name, dist_method, sep = "_")
   }
   else{
     dist <- dist_matrix
     dist_name <- deparse(substitute(dist_matrix))
   }
-  clusters <- hclust(dist, method=agglomeration_method)
+  clusters <- hclust(as.dist(dist), method=agglomeration_method)
   
   clusters_name <- paste("clusters_hc", agglomeration_method, dist_name, sep = "_")
   assign(clusters_name, clusters, envir = .GlobalEnv)
@@ -212,10 +255,9 @@ hierarch_cluster <- function(dist_matrix = NULL,
 
 # Function which cuts hierarchical tree 
 cut_clusters <- function(clusters, num_clusters) {
-  load_package("stats")
   
   cut_clusters <- cutree(clusters, k=num_clusters)
-
+  
   # get the name of the input data frame
   clusters_name <- deparse(substitute(clusters))
   cut_name <- paste("cut", num_clusters, clusters_name, sep = "_")
@@ -226,13 +268,13 @@ cut_clusters <- function(clusters, num_clusters) {
 # Example:
 # cut_clusters(clusters_hc_ward.D2_euclidean_scaled_df_simulated_features, 11)
 
-## 3.4 Model-based -------------------------------------------------------------
-
 # 4 Visualizations -------------------------------------------------------------
 
 # Function, which plots a data frame
+library(ggplot2)
+library(RColorBrewer)
+
 df_plot <- function(df) {
-  load_package("ggplot2")
   
   # Determine the global y range
   global_y_range <- range(df, na.rm = TRUE)
@@ -240,34 +282,51 @@ df_plot <- function(df) {
   # For each row in the dataframe
   for(i in 1:nrow(df)) {
     # Create a new dataframe for this row
-    df_row <- data.frame(Column = colnames(df), Value = unlist(df[i, ]))
+    df_row <- data.frame(Column = seq(1, ncol(df)), Value = unlist(df[i, ]))
     df_row$Group <- rownames(df)[i]
     p <- ggplot(df_row, aes(Column, Value, group = Group)) +
-      geom_line() +  # Use geom_point() here
-      ggtitle(paste("Row:", rownames(df)[i])) +
+      geom_line() + 
+      ggtitle("") +
       xlab("") +
       ylab("") +
       ylim(global_y_range) +
-      theme_minimal() +
-      theme(axis.text.x = element_blank())
+      theme(panel.background = element_rect(fill = "white"))
     
     print(p)
+    
   }
 }
 # Example:
 # df_plot(as.data.frame(df_simulated))
 
+# Function, which plots all rows of a df in one plot
+df_shared_plot <- function(df) {
+  
+  df <- as.data.frame(df)
+  num_rows <- nrow(df)
+  colors <- rainbow(num_rows)
+  
+  # Create an empty plot to serve as the base
+  plot(df[1, ], main = "Overlay of All Rows")
+  
+  # Plot each row on the same plot
+  for (i in 1:num_rows) {
+    lines(df[i, ], col = colors[i])
+  }
+}
+
 # Function which plots the cluster assignment
 cluster_assignment_plot <- function(df, cut_clusters){
   
-  load_package("RColorBrewer")
-  load_package("graphics")
+  cut_clusters_name <- deparse(substitute(cut_clusters))
   
   par(mar = c(11, 4, 2, 2) + 0.1)
   
   # empty plot
-  plot(1, 1, xlim = c(1, length(cut_clusters)), ylim = range(cut_clusters), type = "n", xlab = "", ylab = "Cluster ID", xaxt = "n")
+  plot(1, 1, xlim = c(1 - 0.05*length(cut_clusters), length(cut_clusters) + 0.05*length(cut_clusters)),
+       ylim = range(cut_clusters), type = "n", main = cut_clusters_name, xlab = "", ylab = "Cluster ID", xaxt = "n")
   # Add faint y-axis grid lines
+  clip(1 - 0.05*length(cut_clusters), length(cut_clusters) + 0.05*length(cut_clusters), min(cut_clusters) - 1, max(cut_clusters) + 1)
   abline(h = seq(floor(min(cut_clusters)), ceiling(max(cut_clusters)), by = 1), col = "lightgray", lty = "longdash")
   # Add points
   colors <- hcl.colors(length(cut_clusters), palette = "SunsetDark", alpha = 1, rev = T)
@@ -276,23 +335,23 @@ cluster_assignment_plot <- function(df, cut_clusters){
   axis(2, at = seq(floor(min(cut_clusters)), ceiling(max(cut_clusters)), by = 1))
   
   plot <- recordPlot()
-  cut_clusters_name <- deparse(substitute(cut_clusters))
+  
   plot_name <- paste("plot", cut_clusters_name, sep = "_")
   assign(plot_name, plot, envir = .GlobalEnv)
   par(mar = c(5, 4, 4, 2) + 0.1)  # Default
   return(plot)
 }
 # Example:
-# cluster_assignment_plot(scaled_df_simulated_features, cut_11_clusters_hc_ward.D2_euclidean_scaled_df_simulated_features)
+# cluster_assignment_plot(scaled_df_simulated_features, kmeans_results_scaled_df_simulated_features[[1]])
 
 # Function which plots a hierarchical tree
 hc_plot <- function(clusters){
   
+  clusters_name <- deparse(substitute(clusters))
   par(mar = c(5, 4, 4, 2) + 0.1) 
-  plot(clusters, ylab = "Distance", xlab = "")
+  plot(clusters, main = clusters_name, ylab = "Distance", xlab = "", cex = 0.8)
   
   plot <- recordPlot()
-  clusters_name <- deparse(substitute(clusters))
   plot_name <- paste("plot", clusters_name, sep = "_")
   assign(plot_name, plot, envir = .GlobalEnv)
   par(mar = c(5, 4, 4, 2) + 0.1) # Default
@@ -303,8 +362,6 @@ hc_plot <- function(clusters){
 
 # Function which plots clusters of the original time series
 clusters_plot <- function(cluster_object, df) {
-  load_package("ggplot2")
-  load_package("gridExtra")
   
   # cluster assignment
   df$cluster <- factor(cluster_object)
@@ -315,6 +372,8 @@ clusters_plot <- function(cluster_object, df) {
   # Initialize an empty list to store the plots
   plots <- list()
   
+  clusters_name <- deparse(substitute(cluster_object))
+  
   # For each cluster id
   for(i in seq_along(cluster_ids)) {
     # Subset the data frame for the current cluster
@@ -324,14 +383,13 @@ clusters_plot <- function(cluster_object, df) {
     xlab <- paste("Cluster", cluster_ids[i], sep = " ")
     # Plot all rows of the original data frame
     colors <- hcl.colors(nrow(df_subset), palette = "Set 2", alpha = 1, rev = F) # "Geyser", "Zissou 1"
-    matplot(t(df_subset), type = "l", lty = 1, col = colors, xlab = xlab, ylab = "")
+    matplot(t(df_subset), type = "l", lty = 1, col = colors, main = clusters_name, xlab = xlab, ylab = "", cex = 0.8)
     legend("topright" , legend = rownames(df_subset), col = colors, lty = 1, cex = 0.65)
     # Add the plot to the list
     p <- recordPlot()
     plots[[i]] <- p
     
   }
-  clusters_name <- deparse(substitute(cluster_object))
   plots_name <- paste("series_plots", clusters_name, sep = "_")
   assign(plots_name, plots, envir = .GlobalEnv)
   print(plots_name)
@@ -342,10 +400,9 @@ clusters_plot <- function(cluster_object, df) {
 # 5 Evaluation Criteria --------------------------------------------------------
 
 internal_evaluation <- function(df, distance_method, clusters_object, toGlobEnv = T){
-  load_package("fpc")
   
   dist <- compute_dist_matrix(df, distance_method)
-  clust_stats <- cluster.stats(dist, clusters_object)
+  clust_stats <- ?cluster.stats(dist, clusters_object)
   
   int_eval_df <- data.frame(matrix(ncol = 3, nrow = 1))
   colnames(int_eval_df) <- c("Calinski-Harabasz Index", "Dunn Index", "Average Silhouette Width")
@@ -371,7 +428,6 @@ internal_evaluation <- function(df, distance_method, clusters_object, toGlobEnv 
 # internal_evaluation(scaled_df_simulated_features, "euclidean", clusters_kmeans_scaled_df_simulated_features_11_plus)
 
 external_evaluation <- function(true_labels, clusters_object, toGlobEnv = T){
-  load_package("ClusterR")
   
   ext_eval_df <- data.frame(matrix(ncol = 4, nrow = 1))
   colnames(ext_eval_df) <- c("Adjusted Rand Index", "Jaccard Index", "Purity", "Normalized Mutual Information")
