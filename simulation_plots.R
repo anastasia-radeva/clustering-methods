@@ -39,79 +39,91 @@ load_package("e1071")
 
 source("SARFIMA-GARCH_Simulation.R")
 
+simulation_plots <- list()
+
 # 3 SARFIMA --------------------------------------------------------------------
 
-# 3.1 Mean ---------------------------------------------------------------------
+# 3.1 Unconditional Volatility -------------------------------------------------
+# Create the initial plot with the first series
 
-plot(mean_series_1, type = "l", main = "Mean 1", xlab = "", ylab = "", ylim = c(-10, 10))
-plot(mean_series_2, type = "l", main = "Mean 2", xlab = "", ylab = "", ylim = c(-10, 10))
+plot(wn_1, type = "l", col = "deepskyblue3", lwd = 1, main = "White Noise", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(wn_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("wn_1", "wn_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["sd"]] <- recordPlot()
 
-# 3.2 Volatility ---------------------------------------------------------------
+# 3.2 Skewness -----------------------------------------------------------------
+plot(skewed_wn_1, type = "l", col = "deepskyblue3", lwd = 1, main = "Skew White Noise", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(skewed_wn_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("skewed_wn_1", "skewed_wn_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["skewness"]] <- recordPlot()
 
-plot(sd_series_1, type = "l", main = "Standard Deviation 1", xlab = "", ylab = "", ylim = c(-10, 10))
-plot(sd_series_2, type = "l", main = "Standard Deviation 2", xlab = "", ylab = "", ylim = c(-10, 10))
-
-# 3.3 Skewness -----------------------------------------------------------------
-
-plot(skewed_series_1, type = "l", main = "Skewness 1", xlab = "", ylab = "", ylim = c(-10, 10))
 # density plot
-plot(density(skewed_series_1), type = "l")
+plot(density(skewed_wn_1), type = "l")
 # skewness value
 # moments::skewness(skewed_series_1) # around -1
 # moments::kurtosis(skewed_series_1) # around 3
 
-plot(skewed_series_2, type = "l", main = "Skewness 2", xlab = "", ylab = "", ylim = c(-10, 10))
 # density plot
-plot(density(skewed_series_2), type = "l")
+plot(density(skewed_wn_2), type = "l")
 #skewness value
 # moments::skewness(skewed_series_2) # around -1
 # moments::kurtosis(skewed_series_2) # around 3
 
-# 3.4 Kurtosis -----------------------------------------------------------------
+# 3.3 Kurtosis -----------------------------------------------------------------
+plot(leptokurtic_wn_1, type = "l", col = "deepskyblue3", lwd = 1, main = "Leptokurtic White Noise", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(leptokurtic_wn_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("leptokurtic_wn_1", "leptokurtic_wn_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["kurtosis"]] <- recordPlot()
 
-plot(leptokurtic_series_1, type = "l", main = "Kurtosis 1", xlab = "", ylab = "", ylim = c(-10, 10))
 # density plot
-plot(density(leptokurtic_series_1))
+plot(density(leptokurtic_wn_1))
 # kurtosis value
 # moments::kurtosis(leptokurtic_series_1) # a lot higher than 3
 
-plot(leptokurtic_series_2, type = "l", main = "Kurtosis 2", xlab = "", ylab = "", ylim = c(-10, 10))
 # density plot
-plot(density(leptokurtic_series_2))
+plot(density(leptokurtic_wn_2))
 # kurtosis value
 # moments::kurtosis(leptokurtic_series_2) # a lot higher than 3
 
-# 3.5 Trend --------------------------------------------------------------------
-
-plot(drift_series_1, type = "l", main = "Drift 1", xlab = "", ylab = "", ylim = c(-10, 10))
-plot(drift_series_2, type = "l", main = "Drift 2", xlab = "", ylab = "", ylim = c(-10, 10))
-
-# 3.6 Seasonality --------------------------------------------------------------
-
-plot(seasonal_series_1, type = "l", main = "Seasonality 1", xlab = "", ylab = "", ylim = c(-10, 10))
-plot(seasonal_series_2, type = "l", main = "Seasonality 2", xlab = "", ylab = "", ylim = c(-10, 10))
-
-# 3.7 Periodicity --------------------------------------------------------------
-
-plot(periodic_series_1, type = "l", main = "Periodicity 1", xlab = "", ylab = "", ylim = c(-10, 10))
-plot(periodic_series_2, type = "l", main = "Periodicity 2", xlab = "", ylab = "", ylim = c(-10, 10))
+# 3.4 Trend --------------------------------------------------------------------
+plot(trend_1, type = "l", col = "deepskyblue3", lwd = 1, main = "Upward Trend", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(trend_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("trend_1", "trend_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["trend"]] <- recordPlot()
 
 
-# 3.8 Autocorrelation ----------------------------------------------------------
+# 3.5 Seasonality --------------------------------------------------------------
+plot(seasonal_ar_1, type = "l", col = "deepskyblue3", lwd = 1, main = "Seasonal AR(1) with Different Periods", xlab = "n", ylab = "")
+lines(seasonal_ar_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("seasonal_ar_1", "seasonal_ar_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["seasonal"]] <- recordPlot()
 
-plot(autocorrelated_series_1, type = "l", main = "Autocorrelation 1", xlab = "", ylab = "", ylim = c(-10, 10))
-plot(autocorrelated_series_2, type = "l", main = "Autocorrelation 2", xlab = "", ylab = "", ylim = c(-10, 10))
 
-# 3.9 Long-range Dependence ---------------------------------------------------
+# 3.6 Periodicity --------------------------------------------------------------
+plot(seasonal_ar_3, type = "l", col = "deepskyblue3", lwd = 1, main = "Seasonal AR(1) with Identical Periods", xlab = "n", ylab = "")
+lines(seasonal_ar_4, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("seasonal_ar_3", "seasonal_ar_4"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["period"]] <- recordPlot()
+
+# 3.7 Autocorrelation ----------------------------------------------------------
+plot(ar_1, type = "l", col = "deepskyblue3", lwd = 1, main = "AR(1)", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(ar_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("ar_1", "ar_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["autocorrelation"]] <- recordPlot()
+
+
+# 3.8 Long-range Dependence ---------------------------------------------------
 # On the plots, the long range effects is visible - through this amplification/dampening of the autocorrelation
 #                                                 - better starting from the lag where the autocorrelation function 
 #                                                   of the corresponding arma process is less prominent than the long memory effect, 
 #                                                   so the latter prevails
 # It is hard to detect the magnitude of the two effects, when they have the same sign. 
 # ARFIMA(ar1_1, dfrac)
+plot(fractional_diff_ar_1, type = "l", col = "deepskyblue3", lwd = 1, main = "Fractionally Integrated AR(1)", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(fractional_diff_ar_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("fractional_diff_ar_1", "fractional_diff_ar_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["long_range_dependence"]] <- recordPlot()
 
-plot(long_range_series_1, type = "l", main = "Long-range Dependence 1", xlab = "", ylab = "", ylim = c(-10, 10))
-plot(long_range_series_2, type = "l", main = "Long-range Dependence 2", xlab = "", ylab = "", ylim = c(-10, 10))
 
 # slower decaying autocorrelation than ARMA(1, 0)
 sum(abs(autocorrelations(long_range_series_2)))
@@ -119,40 +131,47 @@ sum(abs(autocorrelations(autocorrelated_series_1)))
 autocorrelations(long_range_series_1, maxlag = 100)
 autocorrelations(autocorrelated_series_1, maxlag = 100)
 
-# 3.10 Non linearity in the Mean -----------------------------------------------
-
-plot(nonlinear_mean_series_1, type = "l", main = "Nonlinearity in Mean 1", xlab = "", ylab = "", ylim = c(-10, 10))
-plot(nonlinear_mean_series_2, type = "l", main = "Nonlinearity in Mean 2", xlab = "", ylab = "", ylim = c(-10, 10))
+# 3.9 Non linearity in the Mean -----------------------------------------------
+plot(tar_1, type = "l", col = "deepskyblue3", lwd = 1, main = "Threshold Regime Switching AR(1)", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(tar_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("tar_1", "tar_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["nonlinear_mean"]] <- recordPlot()
 
 # 4 GARCH ----------------------------------------------------------------------
 
-# 4.1 Non.linearity in the volatility ------------------------------------------
+# 4.1 Nonlinearity in the volatility ------------------------------------------
 
-# plot conditional sd
-plot(nonlinear_vola_series_1, type = "l", main = "Nonlinearity in Vola 1", xlab = "", ylab = "", ylim = c(-10, 10))
-skewness(nonlinear_vola_series_1)
-skewness(nonlinear_s4_1@path$sigmaSim)
-# VERY DIFF, maybe consider a skewed distribution model, if you are going to keep the noise
-# if not, find a way to scale the sigma
-# plot sigma series
-plot(nonlinear_s4_1, which = 1, type = "l")
+plot(egarch_2, type = "l", col = "deepskyblue3", lwd = 1, main = "EGARCH(1, 1)", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(egarch_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("egarch_1", "egarch_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["nonlinear_vola"]] <- recordPlot()
 
-# plot conditional sd
-plot(nonlinear_vola_series_2, type = "l", main = "Nonlinearity in Vola 2", xlab = "", ylab = "", ylim = c(-10, 10))
 # the conditional volatility series and the conditional+unconditional volatility series have different skewness  
-skewness(nonlinear_vola_series_2)
 skewness(nonlinear_s4_2@path$sigmaSim)
-# plot series (in this case, same as the residuals series, no arma)
-plot(nonlinear_s4_2, which = 1, type = "l")
 
-# 4.2 VOLATILITY CLUSTERING ----------------------------------------------------
+# 4.2 Volatility Clustering ----------------------------------------------------
+plot(garch_1, type = "l", col = "deepskyblue3", lwd = 1, main = "GARCH(1, 1)", xlab = "n", ylab = "", ylim = c(-10, 10))
+lines(garch_2, lwd = 1, col = "lightpink3")
+legend("topright", legend = c("garch_1", "garch_2"), col = c("deepskyblue3", "lightpink3"), lty = 1, lwd = 2, cex = 0.8)
+simulation_plots[["vola_clustering"]] <- recordPlot()
 
-# plot series 
-plot(vola_clustering_series_1, type = "l", main = "Volatility CLustering 1", xlab = "", ylab = "")
-# plot conditional sd
-plot(vola_clustering_s4_1, which = 1, type = "l")
+# save plots -------------------------------------------------------------------
+save_plots(simulation_plots, "simulation_plots")
+df_plot(as.data.frame(df_simulated))
 
-# plot series
-plot(vola_clustering_series_2, type = "l", main = "Volatility CLustering 2", xlab = "", ylab = "")
-#plot conditional sd
-plot(vola_clustering_s4_2, which = 1, type = "l")
+# separate plots ---------------------------------------------------------------
+global_y_range <- range(df_simulated, na.rm = TRUE)
+# Create a data frame
+df <- data.frame(Column = 1:length(trend_2), Value = trend_2)
+
+df_row <- data.frame(Column = colnames(df), Value = unlist(df[i, ]))
+df_row$Group <- rownames(df)[i]
+p <- ggplot(df, aes(Column, Value)) +
+  geom_line() + 
+  ggtitle("") +
+  xlab("") +
+  ylab("") +
+  ylim(global_y_range) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        panel.background = element_rect(fill = "white"))
+print(p)
